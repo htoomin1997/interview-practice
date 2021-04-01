@@ -2,6 +2,7 @@ import requests as reqs
 import json
 import pandas as pd
 import numpy as np
+from datetime import timedelta, datetime
 
 def dataIntialization():
     #On 4/1/2021 was taking a while to complete the response...
@@ -61,11 +62,44 @@ def remainingAmount(bigDf, payment_df):
     bigDf['remaining_amount'] = amounts
     return bigDf
 
+def nextPayment(bigDf, payment_df):
+    payments_dict = {}
+    for index, row in payment_df.iterrows():
+        if (row['payment_plan_id'] in payments_dict):
+            payments_dict[row['payment_plan_id']].append(row['date'])
+        else:
+            payments_dict[row['payment_plan_id']] = [row['date']]
+    
+    dates = []
+
+    #Things to keep in mind:
+    #No payments
+    #No payment plan
+    #Late Payments
+    for index, row in bigDf.iterrows():
+        if (row['is_in_payment_plan'] == True):
+            targetDates = payments_dict[row['payment_plan_id']]
+            startDate = row['start_date']
+            dateAdd = 14 if row['installment_frequency'] == "BI_WEEKLY" else 7
+            print("DAY TO ADD",dateAdd)
+            if (len(targetDates) == 0):
+                print(startDate + 14)
+            else:
+                targetDates.sort()
+                latestDate = targetDates[len(targetDates)-1]
+                latestDate = datetime.strptime(latestDate, "%Y-%m-%d")
+                print("Before:",latestDate)
+                latestDate += timedelta(days=14)
+                print("After:",latestDate)
+
+        else:
+            dates.append(None)
 
 def main():
     concatDf, payments = dataIntialization()
     newDf = isEnrolled(concatDf)
     newDf = remainingAmount(newDf, payments)
     print(newDf)
+    nextPayment(newDf, payments)
 
 main()
