@@ -79,27 +79,21 @@ def nextPayment(bigDf, payment_df):
     for index, row in bigDf.iterrows():
         if (row['is_in_payment_plan'] == True):
             targetDates = payments_dict[row['payment_plan_id']]
-            startDate = row['start_date']
+            startDate = datetime.strptime(row['start_date'],"%Y-%m-%d")
             dateAdd = 14 if row['installment_frequency'] == "BI_WEEKLY" else 7
-            print("DAY TO ADD",dateAdd)
-            if (len(targetDates) == 0):
-                print(startDate + 14)
-            else:
-                targetDates.sort()
-                latestDate = targetDates[len(targetDates)-1]
-                latestDate = datetime.strptime(latestDate, "%Y-%m-%d")
-                print("Before:",latestDate)
-                latestDate += timedelta(days=14)
-                print("After:",latestDate)
-
+            dateAdd = dateAdd * (len(targetDates) + 1)
+            print(timedelta(days=dateAdd))
+            dates.append((startDate + timedelta(days=dateAdd)).strftime("%Y-%m-%d"))
         else:
             dates.append(None)
+    bigDf['next_payment_due'] = dates
+    return bigDf
 
 def main():
     concatDf, payments = dataIntialization()
     newDf = isEnrolled(concatDf)
     newDf = remainingAmount(newDf, payments)
+    newDf = nextPayment(newDf, payments)
     print(newDf)
-    nextPayment(newDf, payments)
 
 main()
